@@ -1,0 +1,40 @@
+kyc_verification_task:
+  description: >
+    Retrieve customer KYC data from MongoDB and verify it by comparing JSON records with extracted document data from AWS Textract.
+    Based on details provided by the customer that is fetched from test_account_data that is retrieved by fetch_acc_details_task
+    compare them with extracted data done by data_extraction_tool  using {request_id}.
+    cross Check first_name, last_name, address and aadhar details compare with the extracted details.
+  expected_output: >
+    JSON response indicating whether KYC verification is complete or failed based on extracted document comparison.
+    If failed give reason for failing.
+  agent: kyc_verification_agent
+
+
+fetch_acc_details_task:
+  description : >
+       Fetch acc_details based on the {request_id}.
+  expected_output: >
+       A dictionary of all details.
+  agent : kyc_verification_agent
+
+document_check_task:
+  description: >
+    Validate customer KYC documents using the RAG knowledge base (AOM - Account Opening Manual). Cross-check the provided documents with standard requirements and identify any missing files using the request_id to scan the designated folder. 
+    Generate a structured report highlighting any discrepancies and guide customers on how to complete missing requirements.
+  dependencies: []
+  expected_output: "A dictionary that conatain missing or invalid KYC documents, ensuring compliance before proceeding to onboarding."
+  output:
+    description: "JSON formatted report on missing KYC documents."
+    agent: "KYC Verification Agent"
+    format: "json"
+    example: {"missing_documents": ["PAN Card", "Address Proof"], "status": "Incomplete"}
+  agent : document_check__agent
+
+
+onboarding_task:
+  description: >
+    Fetch acc_details based on the {request_id}.Open a new account for verified customers or notify them of missing documents 
+    - If verified: Generate an account number and mark onboarding as "Completed"
+    - If pending: Provide a list of missing documents and notify the customer
+  agent: onboarding_agent
+    
